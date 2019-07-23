@@ -9,7 +9,6 @@ Created on Fri Jun 21 17:27:49 2019
 
 import pygame
 from time import time
-from barrier import Rect, Ground
 
 
 
@@ -35,18 +34,15 @@ from barrier import Rect, Ground
 
 class Game:
     
-    def __init__(self, w, h):
+    def __init__(self, w, h, name=""):
         pygame.init()
         self.surf = pygame.display.set_mode((w, h))
-        pygame.display.set_caption("car_game")
-        self.screen = Rect(np.zeros(2), np.array([w,h])/2)
-        self.screen_angle = 0
+        pygame.display.set_caption(name)
         
         self.commands = {""}
         
         self.time = time()
         self.ms_per_frame = 30
-        self.rgb_background = (0,0,160)
     
     def _handle_events(self):
         for event in pygame.event.get():
@@ -55,18 +51,14 @@ class Game:
         #keys = pygame.key.get_pressed()
     
     def _draw(self):
-        self.surf.fill(self.rgb_background)
-        if hasattr(self, "ground"):
-            self.ground.draw(self.surf, self.screen, self.screen_angle)
-            self.screen_angle += 0.1
-            #self.screen.center[0] += 1
+        self.surf.fill((0,0,0))
         pygame.display.update()
     
     def _balance(self, PRINT_SHIFT=False):
         shift = round((time() - self.time) * 1000)
         if PRINT_SHIFT: print(shift)
         if shift<self.ms_per_frame:
-            pygame.time.delay(self.ms_per_frame - shift)
+            pygame.time.delay(int(self.ms_per_frame - shift))
         self.time = time()
     
     def run(self):
@@ -78,10 +70,5 @@ class Game:
         pygame.quit()
 
 
-import numpy as np
 game = Game(400,400)
-game.screen.center = np.array([200,200])
-game.ground = Ground((1000,1000))
-game.ground.set_barrier([[100,100],[300,300]])
-game.ground.set_barrier([[250,150],[150,250]])
 game.run()
