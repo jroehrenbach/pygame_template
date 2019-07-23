@@ -8,28 +8,31 @@ Created on Fri Jun 21 17:27:49 2019
 
 
 import pygame
+import numpy as np
 from time import time
 
 
+# also pass game for external control
+# keydict
+# mousedict
 
-# =============================================================================
-# class Command:
-#     
-#     def __init__(self, game, keyname):
-#         self.game = game
-#         self.keyname = keyname
-#     
-#     def poll(self, keylist):
-#         
-#     
-#     def execute(self):
-#         return
-# 
-# class Cmd_move_up(Command):
-#     
-#     def execute(self):
-#         self.game.screen.
-# =============================================================================
+class Command:
+    
+    def __init__(self, game=None):
+        self.game = game
+    
+    def execute(self):
+        print("nothing to execute!")
+
+class LMB(Command):
+    
+    def __init__(self, game):
+        Command.__init__(game)
+    
+    def execute(self):
+        pos = pygame.mouse.get_pos()
+        print("left mouse button pressed at", pos)
+
 
 
 class Game:
@@ -39,16 +42,29 @@ class Game:
         self.surf = pygame.display.set_mode((w, h))
         pygame.display.set_caption(name)
         
-        self.commands = {""}
+        nkeys = 323
+        nbuttons = 3
+        self.keys = np.array([Command()]*nkeys)
+        self.mouse = np.array([Command()]*nbuttons)
+        self.pressed_keys = np.zeros(nkeys, bool)
+        self.pressed_buttons = np.zeros(nbuttons, bool)
+        
+        self.mouse[0] = LMB(self)
         
         self.time = time()
         self.ms_per_frame = 30
+        
+        pygame.mouse.set_pos((w/2,h/2))
     
     def _handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-        #keys = pygame.key.get_pressed()
+        k = np.array(pygame.key.get_pressed(), bool)
+        b = np.array(pygame.mouse.get_pressed(), bool)
+        [key.execute() for key in self.keys[k & ~self.pressed_keys]]
+        [b.execute() for b in self.mouse[b & ~self.pressed_buttons]]
+        self.pressed_keys, self.pressed_buttons = k, b
     
     def _draw(self):
         self.surf.fill((0,0,0))
@@ -64,11 +80,16 @@ class Game:
     def run(self):
         self.running = True
         while self.running:
-            self._handle_events()
+            try:
+                self._handle_events()
+            except:
+                self.running = False
             self._draw()
             self._balance()
         pygame.quit()
 
 
-game = Game(400,400)
-game.run()
+# =============================================================================
+# game = Game(400,400)
+# game.run()
+# =============================================================================
