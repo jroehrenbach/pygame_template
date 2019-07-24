@@ -8,51 +8,56 @@ Created on Fri Jun 21 17:27:49 2019
 
 
 import pygame
-import numpy as np
 from time import time
 
-
-# also pass game for external control
-# keydict
-# mousedict
 
 class Command:
     
     def __init__(self, game=None):
         self.game = game
     
-    def execute(self):
+    def execute(self, *args):
         print("nothing to execute!")
 
+# example commands
 class LMB(Command):
     
     def __init__(self, game):
-        Command.__init__(game)
+        Command.__init__(self, game)
+    
+    def execute(self, position):
+        print("left mouse button was pressed at", position)
+
+class p_key(Command):
+    
+    def __init__(self, game):
+        Command.__init__(self, game)
     
     def execute(self):
-        pos = pygame.mouse.get_pos()
-        print("left mouse button pressed at", pos)
-
+        if self.game.waiting:
+            print("game was unpaused...")
+        else:
+            print("game was paused...")
+        self.game.waiting = ~self.game.waiting
 
 
 class Game:
     
     def __init__(self, w, h, name=""):
+        # initialize pygame and window
         pygame.init()
         self.surf = pygame.display.set_mode((w, h))
         pygame.display.set_caption(name)
         
-        nkeys = 323
-        nbuttons = 3
-        self.keys = np.array([Command()]*nkeys)
-        self.mouse = np.array([Command()]*nbuttons)
-        self.pressed_keys = np.zeros(nkeys, bool)
-        self.pressed_buttons = np.zeros(nbuttons, bool)
-        
-        self.mouse[0] = LMB(self)
+        # commands for pressed keys/buttons
+        self.commands = {
+                1: LMB(self), # left mouse button
+                "p": p_key(self)
+        }
+        self.waiting = False
         
         self.time = time()
-        self.ms_per_frame = 30
+        self.ms_per_frame = 250
         
         pygame.mouse.set_pos((w/2,h/2))
     
@@ -60,14 +65,20 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-        k = np.array(pygame.key.get_pressed(), bool)
-        b = np.array(pygame.mouse.get_pressed(), bool)
-        [key.execute() for key in self.keys[k & ~self.pressed_keys]]
-        [b.execute() for b in self.mouse[b & ~self.pressed_buttons]]
-        self.pressed_keys, self.pressed_buttons = k, b
-    
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button not in self.commands:
+                    continue
+                self.commands[event.button].execute(event.pos)
+            elif event.type == pygame.KEYDOWN:
+                if event.unicode == "":
+                    continue
+                if event.unicode not in self.commands:
+                    continue
+                self.commands[event.unicode].execute()
+        
     def _draw(self):
         self.surf.fill((0,0,0))
+        # draw stuff
         pygame.display.update()
     
     def _balance(self, PRINT_SHIFT=False):
@@ -80,16 +91,18 @@ class Game:
     def run(self):
         self.running = True
         while self.running:
-            try:
-                self._handle_events()
-            except:
-                self.running = False
-            self._draw()
+            self._handle_events()
+            if not self.waiting:
+                self._draw()
             self._balance()
         pygame.quit()
 
 
 # =============================================================================
-# game = Game(400,400)
-# game.run()
+# try:
+#     game = Game(400,400)
+#     game.run()
+# except:
+#     pygame.quit()
+#     print("terminated...")
 # =============================================================================
